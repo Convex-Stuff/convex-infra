@@ -26,6 +26,9 @@ jobs:
             docker stop atlantis || true
             docker rm atlantis || true
 
+            docker volume create atlantis_atlantis-data 2>/dev/null || true
+            docker run --rm -v atlantis_atlantis-data:/data alpine chown -R 100:1000 /data
+
             ATLANTIS_GH_APP_ID=${{ vars.ATLANTIS_GH_APP_ID }} \
             ATLANTIS_GH_APP_KEY="${{ secrets.ATLANTIS_GH_APP_KEY }}" \
             ATLANTIS_GH_WEBHOOK_SECRET=${{ secrets.ATLANTIS_GH_WEBHOOK_SECRET }} \
