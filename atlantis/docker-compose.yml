@@ -10,6 +10,7 @@ services:
       ATLANTIS_GH_WEBHOOK_SECRET: ${ATLANTIS_GH_WEBHOOK_SECRET}
       ATLANTIS_PORT: ${ATLANTIS_PORT}
       ATLANTIS_REPO_ALLOWLIST: ${ATLANTIS_REPO_ALLOWLIST}
+      ATLANTIS_WRITE_GIT_CREDS: "true"
     volumes:
       - atlantis-data:/home/atlantis/.atlantis
     restart: unless-stopped
