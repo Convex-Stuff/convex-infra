@@ -6,6 +6,7 @@ on:
       - master
     paths:
       - 'atlantis/**'
+      - '.github/workflows/deploy-atlantis.yml'
   workflow_dispatch:
 
 jobs:
