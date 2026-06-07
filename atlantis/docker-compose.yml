@@ -1,0 +1,20 @@
+services:
+  atlantis:
+    image: ghcr.io/runatlantis/atlantis:latest
+    container_name: atlantis
+    ports:
+      - "4141:4141"
+    env_file:
+      - .env
+    environment:
+      ATLANTIS_GH_APP_ID: ${{ vars.ATLANTIS_GH_APP_ID }}
+      ATLANTIS_GH_APP_KEY_FILE: ~/atlantis-app.pem
+      ATLANTIS_GH_WEBHOOK_SECRET: ${{ secrets.ATLANTIS_GH_WEBHOOK_SECRET }}
+      ATLANTIS_PORT: ${{ vars.ATLANTIS_PORT }}
+    volumes:
+      - atlantis-data:/home/atlantis/.atlantis
+      - ${ATLANTIS_GH_APP_KEY_PATH}:/atlantis-app.pem:ro
+    restart: unless-stopped
+
+volumes:
+  atlantis-data:
