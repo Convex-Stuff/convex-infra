@@ -5,14 +5,13 @@ services:
     ports:
       - "4141:4141"
     environment:
-      ATLANTIS_GH_APP_ID: ${{ vars.ATLANTIS_GH_APP_ID }}
-      ATLANTIS_GH_APP_KEY_FILE: /atlantis-app.pem
-      ATLANTIS_GH_WEBHOOK_SECRET: ${{ secrets.ATLANTIS_GH_WEBHOOK_SECRET }}
-      ATLANTIS_PORT: ${{ vars.ATLANTIS_PORT }}
-      ATLANTIS_REPO_ALLOWLIST: ${{ vars.ATLANTIS_REPO_ALLOWLIST }}
+      ATLANTIS_GH_APP_ID: ${ATLANTIS_GH_APP_ID}
+      ATLANTIS_GH_APP_KEY: ${ATLANTIS_GH_APP_KEY}
+      ATLANTIS_GH_WEBHOOK_SECRET: ${ATLANTIS_GH_WEBHOOK_SECRET}
+      ATLANTIS_PORT: ${ATLANTIS_PORT}
+      ATLANTIS_REPO_ALLOWLIST: ${ATLANTIS_REPO_ALLOWLIST}
     volumes:
       - atlantis-data:/home/atlantis/.atlantis
-      - ~/atlantis-app.pem:/atlantis-app.pem:ro
     restart: unless-stopped
 
 volumes:
