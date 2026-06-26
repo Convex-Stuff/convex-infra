@@ -17,6 +17,7 @@ services:
       TF_VAR_GF_SECURITY_ADMIN_PASSWORD: ${TF_VAR_GF_SECURITY_ADMIN_PASSWORD}
     dns:
       - 100.100.100.100
+      - 8.8.8.8
     volumes:
       - atlantis-data:/home/atlantis/.atlantis
     restart: unless-stopped
