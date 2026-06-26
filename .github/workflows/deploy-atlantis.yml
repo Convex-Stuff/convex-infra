@@ -35,4 +35,8 @@ jobs:
             ATLANTIS_GH_WEBHOOK_SECRET=${{ secrets.ATLANTIS_GH_WEBHOOK_SECRET }} \
             ATLANTIS_PORT=${{ vars.ATLANTIS_PORT }} \
             ATLANTIS_REPO_ALLOWLIST=${{ vars.ATLANTIS_REPO_ALLOWLIST }} \
+            TF_VAR_SERVER_USER=${{ vars.SERVER_USER }} \
+            TF_VAR_SERVER_HOST=${{ vars.SERVER_HOST }} \
+            TF_VAR_GF_SECURITY_ADMIN_USER=${{ vars.GF_SECURITY_ADMIN_USER }} \
+            TF_VAR_GF_SECURITY_ADMIN_PASSWORD=${{ secrets.GF_SECURITY_ADMIN_PASSWORD }} \
             docker compose -f atlantis/docker-compose.yml up -d
