@@ -15,6 +15,7 @@ services:
       TF_VAR_GF_SECURITY_ADMIN_PASSWORD: ${TF_VAR_GF_SECURITY_ADMIN_PASSWORD}
     network_mode: host
     volumes:
+      - ~/.ssh/atlantis_id_rsa:/home/atlantis/.ssh/id_rsa:ro
       - atlantis-data:/home/atlantis/.atlantis
     restart: unless-stopped
 
