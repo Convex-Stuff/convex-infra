@@ -79,17 +79,18 @@ $packages = @(
     'FiraCode-NF',
 
     # Java versions
-    'temurin-jdk',
+    'graalvm',
+    'graalvm20-jdk8',
+    'graalvm21-jdk11',
+    'graalvm21-jdk17',
+    'graalvm21-jdk21',
     'temurin-lts-jdk',
     'temurin8-jdk',
     'temurin11-jdk',
     'temurin16-jdk',
     'temurin17-jdk',
-    'temurin18-jdk',
-    'temurin19-jdk',
-    'temurin20-jdk',
     'temurin21-jdk',
-    'temurin22-jdk',
+    'temurin25-jdk',
 
     # .NET bullshit
     'vcredist2022',
