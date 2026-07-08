@@ -2,8 +2,19 @@ version: 3
 projects:
   - name: convex-infra
     dir: .
+    workflow: custom
     autoplan:
       when_modified:
         - "*.tf"
         - "atlantis/docker-compose.yml"
       enabled: true
+workflows:
+  custom:
+    plan:
+      steps:
+        - init:
+            extra_args: ["-reconfigure"]
+        - plan
+    apply:
+      steps:
+        - apply
