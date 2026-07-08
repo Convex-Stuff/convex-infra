@@ -9,6 +9,7 @@ services:
       ATLANTIS_PORT: ${ATLANTIS_PORT}
       ATLANTIS_REPO_ALLOWLIST: ${ATLANTIS_REPO_ALLOWLIST}
       ATLANTIS_WRITE_GIT_CREDS: "true"
+      ATLANTIS_REPO_CONFIG: /etc/atlantis/repos.yaml
       TF_VAR_SERVER_USER: ${TF_VAR_SERVER_USER}
       TF_VAR_SERVER_HOST: ${TF_VAR_SERVER_HOST}
       TF_VAR_GF_SECURITY_ADMIN_USER: ${TF_VAR_GF_SECURITY_ADMIN_USER}
@@ -17,6 +18,7 @@ services:
     volumes:
       - ~/.ssh/atlantis_id_rsa:/home/atlantis/.ssh/id_rsa:ro
       - atlantis-data:/home/atlantis/.atlantis
+      - ./repos.yaml:/etc/atlantis/repos.yaml:ro
     restart: unless-stopped
 
 volumes:
