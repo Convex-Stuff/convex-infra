@@ -3,7 +3,7 @@ name: Deploy Atlantis
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - 'atlantis/**'
       - '.github/workflows/deploy-atlantis.yml'
