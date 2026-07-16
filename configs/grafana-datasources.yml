@@ -1,5 +1,13 @@
 apiVersion: 1
 
+# Phase 1/2 provisioned these without explicit uids; changing the uid of an
+# existing datasource makes provisioning fail fatally, so drop and recreate.
+deleteDatasources:
+  - name: Loki
+    orgId: 1
+  - name: Prometheus
+    orgId: 1
+
 datasources:
   - name: Loki
     type: loki
