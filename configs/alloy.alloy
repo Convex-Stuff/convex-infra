@@ -17,7 +17,37 @@ loki.source.docker "containers" {
   targets       = discovery.docker.containers.targets
   relabel_rules = discovery.relabel.containers.rules
   labels        = { job = "docker" }
-  forward_to    = [loki.write.local.receiver]
+  forward_to    = [loki.process.scrub.receiver]
+}
+
+// Redact secrets (osu API keys, oauth credentials, bearer tokens) from all
+// container logs before they reach Loki, regardless of which app logged them.
+loki.process "scrub" {
+  forward_to = [loki.write.local.receiver]
+
+  // key=value form: query strings and urlencoded bodies
+  stage.replace {
+    expression = "(?i)\\b(?:k|b|mp|u|client_id|client_secret|access_token|refresh_token)=([^&\\s\"']+)"
+    replace    = "[REDACTED]"
+  }
+
+  // "key":"value" form: JSON bodies and structured logs
+  stage.replace {
+    expression = "(?i)\"(?:k|b|mp|u|client_id|client_secret|access_token|refresh_token)\"\\s*:\\s*\"([^\"]+)\""
+    replace    = "[REDACTED]"
+  }
+
+  // :id path segments on v2 routes (users, matches, beatmaps)
+  stage.replace {
+    expression = "(?i)/v2/(?:users|matches|beatmaps)/([^/\\s?\"']+)"
+    replace    = "[REDACTED]"
+  }
+
+  // Authorization headers
+  stage.replace {
+    expression = "(?i)bearer\\s+([a-z0-9\\-._~+/]+=*)"
+    replace    = "[REDACTED]"
+  }
 }
 
 loki.write "local" {
@@ -37,12 +67,57 @@ otelcol.receiver.otlp "default" {
 
   output {
     metrics = [otelcol.processor.batch.default.input]
+    traces  = [otelcol.processor.attributes.scrub_traces.input]
+  }
+}
+
+// Strip URL-bearing span attributes so api keys and ids in query strings or
+// paths never reach Tempo. Spans keep http.route, method, and status.
+otelcol.processor.attributes "scrub_traces" {
+  action {
+    key    = "url.full"
+    action = "delete"
+  }
+
+  action {
+    key    = "url.query"
+    action = "delete"
+  }
+
+  action {
+    key    = "url.path"
+    action = "delete"
+  }
+
+  action {
+    key    = "http.url"
+    action = "delete"
+  }
+
+  action {
+    key    = "http.target"
+    action = "delete"
+  }
+
+  output {
+    traces = [otelcol.processor.batch.default.input]
   }
 }
 
 otelcol.processor.batch "default" {
   output {
     metrics = [otelcol.exporter.prometheus.default.input]
+    traces  = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+
+    tls {
+      insecure = true
+    }
   }
 }
 
