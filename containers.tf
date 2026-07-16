@@ -52,6 +52,34 @@ resource "docker_container" "loki" {
   restart = "unless-stopped"
 }
 
+resource "docker_container" "prometheus" {
+  name  = "prometheus"
+  image = docker_image.prometheus.image_id
+
+  command = [
+    "--config.file=/etc/prometheus/prometheus.yml",
+    "--storage.tsdb.path=/prometheus",
+    "--storage.tsdb.retention.time=30d",
+    "--web.enable-remote-write-receiver",
+  ]
+
+  volumes {
+    volume_name    = docker_volume.prometheus_data.name
+    container_path = "/prometheus"
+  }
+
+  upload {
+    content = file("${path.module}/configs/prometheus.yml")
+    file    = "/etc/prometheus/prometheus.yml"
+  }
+
+  networks_advanced {
+    name = docker_network.observability.name
+  }
+
+  restart = "unless-stopped"
+}
+
 resource "docker_container" "alloy" {
   name  = "alloy"
   image = docker_image.alloy.image_id

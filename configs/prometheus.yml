@@ -1,0 +1,5 @@
+# Prometheus acts as storage only. All collection (OTLP from apps and
+# scraping of infra components) happens in Alloy, which pushes here via
+# the remote-write receiver enabled in the container command.
+global:
+  scrape_interval: 15s

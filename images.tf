@@ -12,3 +12,8 @@ resource "docker_image" "alloy" {
   name         = "grafana/alloy:v1.17.1"
   keep_locally = true
 }
+
+resource "docker_image" "prometheus" {
+  name         = "prom/prometheus:v3.13.1"
+  keep_locally = true
+}
