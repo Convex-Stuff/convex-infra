@@ -80,6 +80,29 @@ resource "docker_container" "prometheus" {
   restart = "unless-stopped"
 }
 
+resource "docker_container" "tempo" {
+  name  = "tempo"
+  image = docker_image.tempo.image_id
+
+  command = ["-config.file=/etc/tempo/tempo.yml"]
+
+  volumes {
+    volume_name    = docker_volume.tempo_data.name
+    container_path = "/var/tempo"
+  }
+
+  upload {
+    content = file("${path.module}/configs/tempo.yml")
+    file    = "/etc/tempo/tempo.yml"
+  }
+
+  networks_advanced {
+    name = docker_network.observability.name
+  }
+
+  restart = "unless-stopped"
+}
+
 resource "docker_container" "alloy" {
   name  = "alloy"
   image = docker_image.alloy.image_id
