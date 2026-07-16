@@ -6,6 +6,7 @@ projects:
     autoplan:
       when_modified:
         - "*.tf"
+        - "configs/*"
         - "atlantis/docker-compose.yml"
       enabled: true
 workflows:
