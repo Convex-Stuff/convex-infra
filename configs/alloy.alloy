@@ -83,12 +83,27 @@ loki.write "local" {
 
 otelcol.receiver.otlp "default" {
   grpc {
-    endpoint = "0.0.0.0:4317"
+    endpoint          = "0.0.0.0:4317"
+    max_recv_msg_size = "4MiB"
   }
 
   http {
-    endpoint = "0.0.0.0:4318"
+    endpoint              = "0.0.0.0:4318"
+    max_request_body_size = "4MiB"
   }
+
+  output {
+    metrics = [otelcol.processor.memory_limiter.default.input]
+    traces  = [otelcol.processor.memory_limiter.default.input]
+  }
+}
+
+// First stage after the receiver: under a flood alloy sheds load by refusing
+// data rather than being OOM-killed, which would take log collection for the
+// whole box down with it.
+otelcol.processor.memory_limiter "default" {
+  check_interval = "1s"
+  limit          = "512MiB"
 
   output {
     metrics = [otelcol.processor.batch.default.input]
