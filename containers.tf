@@ -76,6 +76,9 @@ resource "docker_container" "prometheus" {
     "--config.file=/etc/prometheus/prometheus.yml",
     "--storage.tsdb.path=/prometheus",
     "--storage.tsdb.retention.time=30d",
+    # Unlike loki and tempo, prometheus can cap by size. Whichever limit is
+    # reached first wins, so a metrics flood cannot outgrow the disk.
+    "--storage.tsdb.retention.size=10GB",
     "--web.enable-remote-write-receiver",
   ]
 

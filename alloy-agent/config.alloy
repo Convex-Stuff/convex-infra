@@ -38,12 +38,26 @@ loki.write "central" {
 // retries for the link.
 otelcol.receiver.otlp "local" {
   grpc {
-    endpoint = "0.0.0.0:4317"
+    endpoint          = "0.0.0.0:4317"
+    max_recv_msg_size = "4MiB"
   }
 
   http {
-    endpoint = "0.0.0.0:4318"
+    endpoint              = "0.0.0.0:4318"
+    max_request_body_size = "4MiB"
   }
+
+  output {
+    metrics = [otelcol.processor.memory_limiter.default.input]
+    traces  = [otelcol.processor.memory_limiter.default.input]
+  }
+}
+
+// Sheds load rather than being OOM-killed, which would stop log collection
+// for this box as well as forwarding.
+otelcol.processor.memory_limiter "default" {
+  check_interval = "1s"
+  limit          = "512MiB"
 
   output {
     metrics = [otelcol.processor.batch.default.input]

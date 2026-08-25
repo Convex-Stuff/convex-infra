@@ -20,5 +20,16 @@ compactor:
   compaction:
     block_retention: 336h
 
+# Same intent as the loki limits: a ceiling a runaway sender hits long before
+# the disk does. Browser tracing via Faro would land here too.
+overrides:
+  defaults:
+    ingestion:
+      rate_limit_bytes: 5000000
+      burst_size_bytes: 10000000
+      max_traces_per_user: 5000
+    global:
+      max_bytes_per_trace: 5000000
+
 usage_report:
   reporting_enabled: false
