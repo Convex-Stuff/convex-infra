@@ -1,0 +1,15 @@
+apiVersion: 1
+
+# Each subdirectory of /etc/grafana/dashboards becomes a Grafana folder, so
+# adding configs/dashboards/<app>/<name>.json is all it takes to give a new
+# app its own folder. Terraform uploads the tree via a dynamic upload block.
+providers:
+  - name: apps
+    orgId: 1
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/dashboards
+      foldersFromFilesStructure: true
