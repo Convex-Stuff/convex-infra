@@ -16,8 +16,20 @@ loki.source.docker "containers" {
   host          = "unix:///var/run/docker.sock"
   targets       = discovery.docker.containers.targets
   relabel_rules = discovery.relabel.containers.rules
-  labels        = { job = "docker" }
+  labels        = { job = "docker", host = "jackserver" }
   forward_to    = [loki.process.scrub.receiver]
+}
+
+// Logs pushed from alloy agents on other tailnet boxes. They arrive already
+// labelled with their own host, and go through the same scrubbing as local
+// container logs. Published only on the Tailscale interface.
+loki.source.api "remote" {
+  http {
+    listen_address = "0.0.0.0"
+    listen_port    = 3101
+  }
+
+  forward_to = [loki.process.scrub.receiver]
 }
 
 loki.process "scrub" {

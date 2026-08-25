@@ -1,0 +1,69 @@
+// Alloy agent for the terraform box (atlantis, and the united-states-suiji
+// website). It tails every container's logs on this box and receives OTLP from
+// local apps, forwarding both to the central alloy on jackserver.
+//
+// Traffic crosses the tailnet, which is already encrypted by WireGuard, so the
+// exporters below run without TLS of their own.
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "containers" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.docker.containers.targets
+  relabel_rules = discovery.relabel.containers.rules
+  labels        = { job = "docker", host = "terraform" }
+  forward_to    = [loki.write.central.receiver]
+}
+
+loki.write "central" {
+  endpoint {
+    url = "http://" + sys.env("CENTRAL_HOST") + ":3101/loki/api/v1/push"
+  }
+}
+
+// Local apps push here (http://alloy:4318 on the observability network) rather
+// than reaching across the tailnet themselves, so the agent owns batching and
+// retries for the link.
+otelcol.receiver.otlp "local" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    metrics = [otelcol.processor.batch.default.input]
+    traces  = [otelcol.processor.batch.default.input]
+  }
+}
+
+otelcol.processor.batch "default" {
+  output {
+    metrics = [otelcol.exporter.otlp.central.input]
+    traces  = [otelcol.exporter.otlp.central.input]
+  }
+}
+
+otelcol.exporter.otlp "central" {
+  client {
+    endpoint = sys.env("CENTRAL_HOST") + ":4317"
+
+    tls {
+      insecure = true
+    }
+  }
+}

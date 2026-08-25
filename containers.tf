@@ -138,6 +138,21 @@ resource "docker_container" "alloy" {
     file    = "/etc/alloy/config.alloy"
   }
 
+  # Ingestion from other boxes on the tailnet (currently the alloy agent on the
+  # terraform box). Bound to the Tailscale address rather than 0.0.0.0, since
+  # published Docker ports bypass the host firewall.
+  ports {
+    internal = 4317
+    external = 4317
+    ip       = var.TAILNET_IP
+  }
+
+  ports {
+    internal = 3101
+    external = 3101
+    ip       = var.TAILNET_IP
+  }
+
   networks_advanced {
     name = docker_network.observability.name
   }
