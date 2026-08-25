@@ -39,4 +39,5 @@ jobs:
             TF_VAR_SERVER_HOST=${{ secrets.SERVER_HOST }} \
             TF_VAR_GF_SECURITY_ADMIN_USER=${{ secrets.GF_SECURITY_ADMIN_USER }} \
             TF_VAR_GF_SECURITY_ADMIN_PASSWORD=${{ secrets.GF_SECURITY_ADMIN_PASSWORD }} \
+            TF_VAR_TAILNET_IP=${{ vars.TAILNET_IP }} \
             docker compose -f atlantis/docker-compose.yml up -d
