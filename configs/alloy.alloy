@@ -20,33 +20,46 @@ loki.source.docker "containers" {
   forward_to    = [loki.process.scrub.receiver]
 }
 
-// Redact secrets (osu API keys, oauth credentials, bearer tokens) from all
-// container logs before they reach Loki, regardless of which app logged them.
 loki.process "scrub" {
   forward_to = [loki.write.local.receiver]
 
-  // key=value form: query strings and urlencoded bodies
+  // Universal credentials: applied to every container's logs, since these
+  // names mean the same thing in any app.
   stage.replace {
-    expression = "(?i)\\b(?:k|b|mp|u|client_id|client_secret|access_token|refresh_token)=([^&\\s\"']+)"
+    expression = "(?i)\\b(?:client_id|client_secret|access_token|refresh_token)=([^&\\s\"']+)"
     replace    = "[REDACTED]"
   }
 
-  // "key":"value" form: JSON bodies and structured logs
   stage.replace {
-    expression = "(?i)\"(?:k|b|mp|u|client_id|client_secret|access_token|refresh_token)\"\\s*:\\s*\"([^\"]+)\""
+    expression = "(?i)\"(?:client_id|client_secret|access_token|refresh_token)\"\\s*:\\s*\"([^\"]+)\""
     replace    = "[REDACTED]"
   }
 
-  // :id path segments on v2 routes (users, matches, beatmaps)
-  stage.replace {
-    expression = "(?i)/v2/(?:users|matches|beatmaps)/([^/\\s?\"']+)"
-    replace    = "[REDACTED]"
-  }
-
-  // Authorization headers
   stage.replace {
     expression = "(?i)bearer\\s+([a-z0-9\\-._~+/]+=*)"
     replace    = "[REDACTED]"
+  }
+
+  // osu-specific parameters and path ids. Scoped to the proxy so that a
+  // different app logging "u=" or "b=" keeps readable logs. Update the
+  // selector if the proxy's container name changes.
+  stage.match {
+    selector = "{container=~\"convex-osu-proxy.*\"}"
+
+    stage.replace {
+      expression = "(?i)\\b(?:k|b|mp|u)=([^&\\s\"']+)"
+      replace    = "[REDACTED]"
+    }
+
+    stage.replace {
+      expression = "(?i)\"(?:k|b|mp|u)\"\\s*:\\s*\"([^\"]+)\""
+      replace    = "[REDACTED]"
+    }
+
+    stage.replace {
+      expression = "(?i)/v2/(?:users|matches|beatmaps)/([^/\\s?\"']+)"
+      replace    = "[REDACTED]"
+    }
   }
 }
 

@@ -17,6 +17,22 @@ resource "docker_container" "grafana" {
     file    = "/etc/grafana/provisioning/datasources/datasources.yml"
   }
 
+  upload {
+    content = file("${path.module}/configs/grafana-dashboards.yml")
+    file    = "/etc/grafana/provisioning/dashboards/dashboards.yml"
+  }
+
+  # Mirrors configs/dashboards/<folder>/<name>.json into the container; each
+  # subdirectory shows up in Grafana as a folder of that name.
+  dynamic "upload" {
+    for_each = fileset("${path.module}/configs/dashboards", "**/*.json")
+
+    content {
+      content = file("${path.module}/configs/dashboards/${upload.value}")
+      file    = "/etc/grafana/dashboards/${upload.value}"
+    }
+  }
+
   networks_advanced {
     name = docker_network.observability.name
   }
