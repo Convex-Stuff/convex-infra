@@ -87,11 +87,6 @@ jobs:
             docker compose run --rm --no-deps -T caddy \
               caddy validate --config /etc/caddy/site/Caddyfile --adapter caddyfile
 
-            # Until the cutover, united-states-suiji's own stack runs the proxy
-            # and holds ports 80 and 443. Remove that container so this one can
-            # bind them. Does nothing once it is gone.
-            docker rm -f united-states-suiji-prod-caddy-1 2>/dev/null || true
-
             docker compose up -d --remove-orphans
 
             # Caddy reads its config once, at startup, and compose leaves a
