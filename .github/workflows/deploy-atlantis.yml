@@ -13,6 +13,11 @@ on:
       - '.github/workflows/deploy-atlantis.yml'
   workflow_dispatch:
 
+# Both deploys on this box pull the same checkout, so never run them at once.
+concurrency:
+  group: terraform-box
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

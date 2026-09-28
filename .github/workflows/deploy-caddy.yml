@@ -1,0 +1,115 @@
+name: Deploy Caddy
+
+# Deploys caddy/, the reverse proxy for every site on the terraform box. Like
+# the Atlantis deploy, it joins the tailnet and works in the box's checkout of
+# this repo.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'caddy/**'
+      - '.github/workflows/deploy-caddy.yml'
+  workflow_dispatch:
+
+# Both deploys on this box pull the same checkout, so never run them at once.
+concurrency:
+  group: terraform-box
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Required for the Tailscale action to request an OIDC token from GitHub.
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Connect to tailnet
+        uses: tailscale/github-action@v4.1.3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:ci
+          # Peer propagation is eventually consistent; wait until the box is
+          # actually reachable rather than racing it in the next step.
+          ping: ${{ secrets.DEPLOY_HOST }}
+
+      - name: SSH and deploy
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          # The box's ECDSA host key, not its ED25519 one: this action is built
+          # on Go's SSH client, which negotiates ECDSA first, so any other
+          # key's fingerprint mismatches. On the box:
+          #   ssh-keygen -lf /etc/ssh/ssh_host_ecdsa_key.pub | awk '{print $2}'
+          fingerprint: ${{ secrets.SSH_HOST_FINGERPRINT }}
+          envs: USS_ORIGIN_CERT,USS_ORIGIN_KEY,LTC_ORIGIN_CERT,LTC_ORIGIN_KEY
+          script: |
+            set -e
+            cd ~/repos/convex-infra
+            git pull origin main
+            cd caddy
+
+            # Checked before anything is written or restarted, because Caddy
+            # refuses to load a config whose cert file is missing or empty - it
+            # would exit and take every site down. Failing here leaves the
+            # running proxy alone.
+            for name in USS_ORIGIN_CERT USS_ORIGIN_KEY LTC_ORIGIN_CERT LTC_ORIGIN_KEY; do
+              eval "value=\$$name"
+              if [ -z "$value" ]; then
+                echo "$name is empty: set it in the repository secrets." >&2
+                exit 1
+              fi
+            done
+
+            # Cloudflare Origin Certificates, one per zone. Written every deploy,
+            # so rotating one is just a matter of updating its secrets.
+            umask 077
+            mkdir -p certs
+            printf '%s\n' "$USS_ORIGIN_CERT" > certs/uss-origin.pem
+            printf '%s\n' "$USS_ORIGIN_KEY" > certs/uss-origin.key
+            printf '%s\n' "$LTC_ORIGIN_CERT" > certs/ltc-origin.pem
+            printf '%s\n' "$LTC_ORIGIN_KEY" > certs/ltc-origin.key
+
+            # Shared with every site's stack. No one stack owns it, so whichever
+            # deploys first creates it: compose refuses to start without it.
+            docker network inspect edge >/dev/null 2>&1 || docker network create edge
+
+            docker compose pull
+
+            # Load the new config and certs in a throwaway container first, so a
+            # mistake fails this job instead of the running proxy.
+            docker compose run --rm --no-deps -T caddy \
+              caddy validate --config /etc/caddy/site/Caddyfile --adapter caddyfile
+
+            # Until the cutover, united-states-suiji's own stack runs the proxy
+            # and holds ports 80 and 443. Remove that container so this one can
+            # bind them. Does nothing once it is gone.
+            docker rm -f united-states-suiji-prod-caddy-1 2>/dev/null || true
+
+            docker compose up -d --remove-orphans
+
+            # Caddy reads its config once, at startup, and compose leaves a
+            # running container alone when only the Caddyfile changed - so
+            # reload it. A graceful reload keeps serving the old config if the
+            # new one is rejected. Retried, because a container compose has just
+            # created may not be accepting commands yet.
+            for attempt in 1 2 3 4 5; do
+              if docker compose exec -T caddy caddy reload --config /etc/caddy/site/Caddyfile --adapter caddyfile; then
+                break
+              fi
+              [ "$attempt" = 5 ] && exit 1
+              sleep 2
+            done
+
+            docker image prune -f
+        env:
+          USS_ORIGIN_CERT: ${{ secrets.USS_ORIGIN_CERT }}
+          USS_ORIGIN_KEY: ${{ secrets.USS_ORIGIN_KEY }}
+          LTC_ORIGIN_CERT: ${{ secrets.LTC_ORIGIN_CERT }}
+          LTC_ORIGIN_KEY: ${{ secrets.LTC_ORIGIN_KEY }}
