@@ -32,25 +32,16 @@ jobs:
           # actually reachable rather than racing it in the next step.
           ping: ${{ secrets.DEPLOY_HOST }}
 
-      # Temporary: diagnosing a host key fingerprint mismatch. Prints which
-      # tailnet node DEPLOY_HOST is and the fingerprint of every host key it
-      # offers. Fingerprints are public, so this is safe to log; one that
-      # equals SSH_HOST_FINGERPRINT is masked by GitHub and shows as ***.
-      - name: Show host keys
-        continue-on-error: true
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-        run: |
-          ip=$(sudo tailscale ip -4 "$DEPLOY_HOST")
-          echo "node: $(sudo tailscale whois --json "$ip" | jq -r '.Node.ComputedName // .Node.Name')"
-          ssh-keyscan -T 10 "$DEPLOY_HOST" 2>/dev/null | ssh-keygen -lf -
-
       - name: SSH and deploy
         uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          # The box's ECDSA host key, not its ED25519 one: this action is built
+          # on Go's SSH client, which negotiates ECDSA first, so any other
+          # key's fingerprint mismatches. On the box:
+          #   ssh-keygen -lf /etc/ssh/ssh_host_ecdsa_key.pub | awk '{print $2}'
           fingerprint: ${{ secrets.SSH_HOST_FINGERPRINT }}
           script: |
             cd ~/repos/convex-infra
