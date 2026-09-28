@@ -1,0 +1,29 @@
+# Terminates TLS for every site on the terraform box. Each site's app runs in
+# its own compose stack and joins the shared `edge` network, where this Caddy
+# reaches it by name.
+#
+# Every site is proxied by Cloudflare and presents a Cloudflare Origin
+# Certificate, which Cloudflare trusts but browsers don't - fine, since visitors
+# only ever see Cloudflare's edge certificate. Set each zone's SSL/TLS mode to
+# Full (strict). Origin certificates are per zone, so each site needs its own.
+#
+# Because the certs are supplied explicitly, Caddy does not attempt automatic
+# HTTPS: an ACME challenge cannot complete through Cloudflare's proxy, which
+# terminates TLS at the edge.
+#
+# A missing or empty cert file stops Caddy loading this file at all, taking
+# every site down with it, so the deploy refuses to run without one.
+
+# united-states-suiji
+uss.convex.coffee {
+	tls /etc/caddy/certs/uss-origin.pem /etc/caddy/certs/uss-origin.key
+
+	reverse_proxy uss-app:3000
+}
+
+# ltc-site
+lelastechcup.com {
+	tls /etc/caddy/certs/ltc-origin.pem /etc/caddy/certs/ltc-origin.key
+
+	reverse_proxy ltc-site-web:3000
+}

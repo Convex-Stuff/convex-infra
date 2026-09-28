@@ -1,0 +1,49 @@
+# The terraform box's reverse proxy, shared by every site on it. Only one
+# container can hold ports 80 and 443, so this is the only thing serving them;
+# the sites are separate compose stacks that join the `edge` network.
+#
+# Deployed by .github/workflows/deploy-caddy.yml, which writes the certificates
+# to ./certs before starting it.
+name: caddy
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    # The Caddyfile is mounted by its directory, never as a single file: a
+    # file bind mount pins the container to that file's inode, so a deploy
+    # replacing it leaves the container reading the original forever -
+    # including when reloading, which then quietly re-applies the stale config.
+    command:
+      - caddy
+      - run
+      - --config
+      - /etc/caddy/site/Caddyfile
+      - --adapter
+      - caddyfile
+    volumes:
+      - ./site:/etc/caddy/site:ro
+      - ./certs:/etc/caddy/certs:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - edge
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Declared external because no one stack owns it: the sites join it too. The
+# deploy creates it if it is missing.
+networks:
+  edge:
+    external: true
+
+volumes:
+  caddy-data:
+  caddy-config:
