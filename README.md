@@ -40,3 +40,12 @@ To add a site:
 The Caddyfile is mounted by its directory, never as a single file. A file bind
 mount pins the container to one inode, so a deploy replacing the file leaves
 the container reading the original, and reloads silently re-apply it.
+
+### Firewall
+
+The box's Linode Cloud Firewall only admits Cloudflare's IP ranges on its HTTP
+and HTTPS rules, so no site can be reached around Cloudflare. That covers the
+whole box: a site served here must be proxied by Cloudflare or it is
+unreachable. When Cloudflare changes its ranges, the owner re-runs
+`scripts/update-cloudflare-firewall.ts` with their own Linode token (usage in
+its header). It previews by default, and leaves every other rule alone.
