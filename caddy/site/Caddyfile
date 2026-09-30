@@ -5,7 +5,8 @@
 # Every site is proxied by Cloudflare and presents a Cloudflare Origin
 # Certificate, which Cloudflare trusts but browsers don't - fine, since visitors
 # only ever see Cloudflare's edge certificate. Set each zone's SSL/TLS mode to
-# Full (strict). Origin certificates are per zone, so each site needs its own.
+# Full (strict). Origin certificates are per zone: every *.convex.coffee site
+# shares the zone's wildcard certificate, and another zone needs its own.
 #
 # Because the certs are supplied explicitly, Caddy does not attempt automatic
 # HTTPS: an ACME challenge cannot complete through Cloudflare's proxy, which
@@ -16,7 +17,7 @@
 
 # united-states-suiji
 uss.convex.coffee {
-	tls /etc/caddy/certs/uss-origin.pem /etc/caddy/certs/uss-origin.key
+	tls /etc/caddy/certs/convex-coffee-origin.pem /etc/caddy/certs/convex-coffee-origin.key
 
 	reverse_proxy uss-app:3000
 }
@@ -26,4 +27,11 @@ lelastechcup.com {
 	tls /etc/caddy/certs/ltc-origin.pem /etc/caddy/certs/ltc-origin.key
 
 	reverse_proxy ltc-site-web:3000
+}
+
+# challenge-dans
+dans.convex.coffee {
+	tls /etc/caddy/certs/convex-coffee-origin.pem /etc/caddy/certs/convex-coffee-origin.key
+
+	reverse_proxy dans-app:3000
 }
