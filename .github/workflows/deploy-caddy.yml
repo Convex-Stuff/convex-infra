@@ -48,7 +48,7 @@ jobs:
           # key's fingerprint mismatches. On the box:
           #   ssh-keygen -lf /etc/ssh/ssh_host_ecdsa_key.pub | awk '{print $2}'
           fingerprint: ${{ secrets.SSH_HOST_FINGERPRINT }}
-          envs: USS_ORIGIN_CERT,USS_ORIGIN_KEY,LTC_ORIGIN_CERT,LTC_ORIGIN_KEY
+          envs: CONVEX_COFFEE_ORIGIN_CERT,CONVEX_COFFEE_ORIGIN_KEY,LTC_ORIGIN_CERT,LTC_ORIGIN_KEY
           script: |
             set -e
             cd ~/repos/convex-infra
@@ -59,7 +59,7 @@ jobs:
             # refuses to load a config whose cert file is missing or empty - it
             # would exit and take every site down. Failing here leaves the
             # running proxy alone.
-            for name in USS_ORIGIN_CERT USS_ORIGIN_KEY LTC_ORIGIN_CERT LTC_ORIGIN_KEY; do
+            for name in CONVEX_COFFEE_ORIGIN_CERT CONVEX_COFFEE_ORIGIN_KEY LTC_ORIGIN_CERT LTC_ORIGIN_KEY; do
               eval "value=\$$name"
               if [ -z "$value" ]; then
                 echo "$name is empty: set it in the repository secrets." >&2
@@ -67,12 +67,13 @@ jobs:
               fi
             done
 
-            # Cloudflare Origin Certificates, one per zone. Written every deploy,
+            # Cloudflare Origin Certificates, one per zone: convex.coffee's is a
+            # wildcard shared by all its subdomains. Written every deploy,
             # so rotating one is just a matter of updating its secrets.
             umask 077
             mkdir -p certs
-            printf '%s\n' "$USS_ORIGIN_CERT" > certs/uss-origin.pem
-            printf '%s\n' "$USS_ORIGIN_KEY" > certs/uss-origin.key
+            printf '%s\n' "$CONVEX_COFFEE_ORIGIN_CERT" > certs/convex-coffee-origin.pem
+            printf '%s\n' "$CONVEX_COFFEE_ORIGIN_KEY" > certs/convex-coffee-origin.key
             printf '%s\n' "$LTC_ORIGIN_CERT" > certs/ltc-origin.pem
             printf '%s\n' "$LTC_ORIGIN_KEY" > certs/ltc-origin.key
 
@@ -104,7 +105,7 @@ jobs:
 
             docker image prune -f
         env:
-          USS_ORIGIN_CERT: ${{ secrets.USS_ORIGIN_CERT }}
-          USS_ORIGIN_KEY: ${{ secrets.USS_ORIGIN_KEY }}
+          CONVEX_COFFEE_ORIGIN_CERT: ${{ secrets.CONVEX_COFFEE_ORIGIN_CERT }}
+          CONVEX_COFFEE_ORIGIN_KEY: ${{ secrets.CONVEX_COFFEE_ORIGIN_KEY }}
           LTC_ORIGIN_CERT: ${{ secrets.LTC_ORIGIN_CERT }}
           LTC_ORIGIN_KEY: ${{ secrets.LTC_ORIGIN_KEY }}

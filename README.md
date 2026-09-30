@@ -25,17 +25,23 @@ is its own compose stack, deployed from its own repo, that joins `edge`, a
 Docker network external to every project.
 
 Every site is proxied by Cloudflare and presents a Cloudflare Origin
-Certificate, one per zone, stored as `<SITE>_ORIGIN_CERT` / `<SITE>_ORIGIN_KEY`
-in this repo's secrets. None can use ACME: the challenge cannot complete
-through a proxy that terminates TLS at the edge.
+Certificate, one per zone, stored as `<ZONE>_ORIGIN_CERT` / `<ZONE>_ORIGIN_KEY`
+in this repo's secrets. The `convex.coffee` zone's is a wildcard
+(`*.convex.coffee`, `convex.coffee`) in `CONVEX_COFFEE_ORIGIN_CERT` /
+`CONVEX_COFFEE_ORIGIN_KEY`, shared by every site on a subdomain of it. None
+can use ACME: the challenge cannot complete through a proxy that terminates
+TLS at the edge.
 
 To add a site:
 
 1. In the site's compose file, join its web container to the external `edge`
    network under a name unique on that network.
 2. Add a block for it to `caddy/site/Caddyfile`, proxying to that name.
-3. Add its origin certificate as two secrets, and write them to `certs/` in
-   the deploy script alongside the others, including the empty-value check.
+3. On a `convex.coffee` subdomain, point its `tls` line at the shared
+   `convex-coffee-origin` files; nothing else is needed. On another zone, add
+   that zone's origin certificate as two secrets, and write them to `certs/`
+   in the deploy script alongside the others, including the empty-value
+   check.
 
 The Caddyfile is mounted by its directory, never as a single file. A file bind
 mount pins the container to one inode, so a deploy replacing the file leaves
