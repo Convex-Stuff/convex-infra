@@ -35,3 +35,10 @@ dans.convex.coffee {
 
 	reverse_proxy dans-app:3000
 }
+
+# bot
+bot.convex.coffee {
+	tls /etc/caddy/certs/convex-coffee-origin.pem /etc/caddy/certs/convex-coffee-origin.key
+
+	reverse_proxy bot:3000
+}
